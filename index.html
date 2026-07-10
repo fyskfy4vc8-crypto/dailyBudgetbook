@@ -21,11 +21,12 @@
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0; background:var(--bg2); color:var(--text);
     font-family:'JetBrains Mono', ui-monospace, monospace;
-    height:100%; overscroll-behavior-y:none;}
-  #safe-top{height:env(safe-area-inset-top,20px); background:var(--bg2);}
-  #safe-bottom{height:env(safe-area-inset-bottom,0px); background:var(--bg2);}
-  #app{max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;}
-  header{display:flex; align-items:center; justify-content:space-between; padding:8px 16px 12px;}
+    height:100vh; height:100dvh; overflow:hidden; overscroll-behavior-y:none;}
+  body{display:flex; flex-direction:column;}
+  #safe-top{height:env(safe-area-inset-top,20px); background:var(--bg2); flex-shrink:0;}
+  #safe-bottom{height:env(safe-area-inset-bottom,0px); background:var(--card); flex-shrink:0;}
+  #app{max-width:480px; margin:0 auto; width:100%; flex:1; display:flex; flex-direction:column; min-height:0;}
+  header{display:flex; align-items:center; justify-content:space-between; padding:8px 16px 12px; flex-shrink:0;}
   .brand{display:flex; align-items:center; gap:10px;}
   .iconbox{width:32px; height:32px; border-radius:8px; background:var(--accentbg);
     display:flex; align-items:center; justify-content:center;}
@@ -34,7 +35,7 @@
   .knob{width:20px; height:20px; border-radius:50%; background:var(--knob); position:absolute;
     top:3px; left:3px; transition:left .15s;}
   [data-theme="dark"] .knob{left:21px;}
-  main{flex:1; padding:0 16px 16px;}
+  main{flex:1; min-height:0; overflow-y:auto; padding:0 16px 16px; -webkit-overflow-scrolling:touch;}
   .monthnav{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
   .monthnav button{background:none; border:none; color:var(--text); font-size:18px; padding:6px 10px; cursor:pointer;}
   .monthnav .label{font-size:15px; font-weight:600;}
@@ -73,7 +74,7 @@
   .txnrow .meta{font-size:12px; color:var(--sub);}
   .txnrow .actions{display:flex; align-items:center; gap:14px;}
   .txnrow .actions span{cursor:pointer; font-size:14px;}
-  .tabbar{display:flex; border-top:0.5px solid var(--border); background:var(--card); padding:6px 10px 4px; gap:4px;}
+  .tabbar{display:flex; border-top:0.5px solid var(--border); background:var(--card); padding:6px 10px 4px; gap:4px; flex-shrink:0;}
   .tabbar button{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
     background:none; border:none; padding:8px 0 6px; font-size:11px; letter-spacing:0.3px;
     color:var(--sub); cursor:pointer; border-radius:10px; transition:background .15s, color .15s;}

@@ -1,4 +1,4 @@
-const CACHE = 'daily-budget-book-v10';
+const CACHE = 'daily-budget-book-v11';
 const ASSETS = [
   './',
   './index.html',
