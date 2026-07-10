@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#141613" />
+<title>dailyBudgetBook</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<style>
+  :root{
+    --bg:#FFFFFF; --bg2:#F7F8F6; --card:#FFFFFF; --text:#1A1A18; --sub:#5F5E5A;
+    --border:#E5E4E0; --accent:#3B6D11; --accentbg:#EAF3DE; --danger:#A32D2D;
+    --dangerbg:#FCEBEB; --track:#F1EFE8; --knob:#3B6D11;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg2); color:var(--text);
+    font-family:'JetBrains Mono', ui-monospace, monospace;
+    height:100%; overscroll-behavior-y:none;}
+  #safe-top{height:env(safe-area-inset-top,20px); background:var(--bg2);}
+  #safe-bottom{height:env(safe-area-inset-bottom,0px); background:var(--bg2);}
+  #app{max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;}
+  header{display:flex; align-items:center; justify-content:space-between; padding:8px 16px 12px;}
+  .brand{display:flex; align-items:center; gap:10px;}
+  .iconbox{width:32px; height:32px; border-radius:8px; background:var(--accentbg);
+    display:flex; align-items:center; justify-content:center;}
+  .apptitle{font-size:16px; font-weight:600; letter-spacing:0.5px;}
+  .switch{width:44px; height:26px; border-radius:13px; background:var(--border); position:relative; cursor:pointer;}
+  .knob{width:20px; height:20px; border-radius:50%; background:var(--knob); position:absolute;
+    top:3px; left:3px; transition:left .15s;}
+  [data-theme="dark"] .knob{left:21px;}
+  main{flex:1; padding:0 16px 16px;}
+  .monthnav{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .monthnav button{background:none; border:none; color:var(--text); font-size:18px; padding:6px 10px; cursor:pointer;}
+  .monthnav .label{font-size:15px; font-weight:600;}
+  .warn{background:var(--dangerbg); color:var(--danger); font-size:12px; padding:10px 12px;
+    border-radius:10px; margin-bottom:12px;}
+  .card{background:var(--card); border:0.5px solid var(--border); border-radius:12px;
+    padding:12px 14px; margin-bottom:10px; cursor:pointer; user-select:none;}
+  .card .row{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;}
+  .card .name{font-weight:600; font-size:15px;}
+  .card .amt{font-size:13px; color:var(--sub);}
+  .track{height:6px; background:var(--track); border-radius:4px; overflow:hidden;}
+  .fill{height:100%; background:var(--accent);}
+  .fill.over{background:var(--danger);}
+  .sub{font-size:12px; color:var(--sub); margin-top:6px;}
+  .sub.over{color:var(--danger);}
+  .drag-handle{color:var(--sub); font-size:14px; margin-left:8px; cursor:grab;}
+  .btnrow{display:flex; gap:8px; margin-top:4px;}
+  button.primary, button.secondary{
+    font-size:14px; padding:10px 14px; border-radius:10px; cursor:pointer; width:100%;
+  }
+  button.primary{background:var(--accent); color:var(--bg); border:none; font-weight:600;}
+  button.secondary{background:none; border:0.5px solid var(--border); color:var(--text);}
+  button.ghost{background:none; border:none; color:var(--sub); font-size:13px; padding:6px;}
+  input,select,textarea{
+    width:100%; font-size:15px; padding:9px 10px; border-radius:8px;
+    border:0.5px solid var(--border); background:var(--card); color:var(--text); margin-bottom:12px;
+  }
+  label{font-size:12px; color:var(--sub); display:block; margin-bottom:4px;}
+  .field{margin-bottom:14px;}
+  .chiprow{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;}
+  .chip{font-size:12px; padding:6px 10px; border-radius:999px; border:0.5px solid var(--border);
+    background:var(--card); color:var(--text); cursor:pointer;}
+  .chip.active{background:var(--accentbg); border-color:var(--accent); color:var(--accent);}
+  .txnrow{display:flex; justify-content:space-between; align-items:center; padding:10px 0;
+    border-bottom:0.5px solid var(--border);}
+  .txnrow .meta{font-size:12px; color:var(--sub);}
+  .txnrow .actions{display:flex; align-items:center; gap:14px;}
+  .txnrow .actions span{cursor:pointer; font-size:14px;}
+  .tabbar{display:flex; border-top:0.5px solid var(--border); background:var(--card); padding:6px 10px 4px; gap:4px;}
+  .tabbar button{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:none; border:none; padding:8px 0 6px; font-size:11px; letter-spacing:0.3px;
+    color:var(--sub); cursor:pointer; border-radius:10px; transition:background .15s, color .15s;}
+  .tabbar button svg{width:20px; height:20px; stroke:var(--sub); transition:stroke .15s;}
+  .tabbar button.active{color:var(--accent); background:var(--accentbg);}
+  .tabbar button.active svg{stroke:var(--accent);}
+  .themegrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;}
+  .themecard{border:2px solid var(--border); border-radius:12px; padding:10px; cursor:pointer;}
+  .themecard.selected{border-color:var(--accent);}
+  .themeswatch{display:flex; height:34px; border-radius:8px; overflow:hidden; margin-bottom:8px;}
+  .themeswatch div{flex:1;}
+  .themename{font-size:12px; font-weight:600;}
+  .b-icon{width:30px; height:30px; min-width:30px; border-radius:8px; background:var(--accentbg);
+    color:var(--accent); display:flex; align-items:center; justify-content:center; margin-right:10px;}
+  .b-icon.sm{width:24px; height:24px; min-width:24px; border-radius:7px; margin-right:8px;}
+  .empty{text-align:center; color:var(--sub); font-size:13px; padding:40px 20px;}
+  .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex;
+    align-items:flex-end; justify-content:center; z-index:50;}
+  .modal{background:var(--bg); width:100%; max-width:480px; border-radius:16px 16px 0 0;
+    padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px)); max-height:80vh; overflow-y:auto;}
+  .modal h3{margin:0 0 14px; font-size:16px;}
+  .backbtn{background:none; border:none; color:var(--text); font-size:20px; cursor:pointer; padding:4px 8px 4px 0;}
+  .cardhead{display:flex; justify-content:space-between; align-items:flex-start;}
+  .kebab{position:relative;}
+  .kebab .dots{background:none; border:none; color:var(--sub); font-size:16px; padding:0 4px; cursor:pointer;}
+  .kebabmenu{position:absolute; right:0; top:22px; background:var(--card); border:0.5px solid var(--border);
+    border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,.15); z-index:20; min-width:120px; overflow:hidden;}
+  .kebabmenu button{display:block; width:100%; text-align:left; background:none; border:none; padding:10px 12px;
+    font-size:13px; color:var(--text); cursor:pointer;}
+  .kebabmenu button.danger{color:var(--danger);}
+  .kebabmenu button:hover{background:var(--bg2);}
+  .viewtoggle{display:flex; gap:6px;}
+  .viewtoggle button{background:none; border:0.5px solid var(--border); border-radius:8px; padding:5px 9px;
+    font-size:12px; color:var(--sub); cursor:pointer;}
+  .viewtoggle button.active{color:var(--accent); border-color:var(--accent);}
+  .gridwrap{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .gridcard{background:var(--card); border:0.5px solid var(--border); border-radius:12px; padding:10px;
+    cursor:pointer; user-select:none;}
+  .gridcard .name{font-weight:600; font-size:13px; margin-bottom:4px; display:block;}
+  .gridcard .amt{font-size:11px; color:var(--sub); display:block; margin-bottom:6px;}
+  #toast{position:fixed; left:50%; bottom:calc(70px + env(safe-area-inset-bottom,0px));
+    transform:translateX(-50%) translateY(10px); background:var(--text); color:var(--bg);
+    font-size:13px; padding:10px 16px; border-radius:999px; opacity:0; pointer-events:none;
+    transition:opacity .2s, transform .2s; z-index:100; white-space:nowrap;}
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div id="safe-top"></div>
+<div id="app">
+  <header>
+    <div class="brand">
+      <div class="iconbox">
+        <svg width="18" height="18" viewBox="0 0 40 40">
+          <rect x="2" y="4" width="26" height="24" rx="4" fill="none" stroke="#97C459" stroke-width="4"/>
+          <line x1="8" y1="14" x2="22" y2="14" stroke="#97C459" stroke-width="3" stroke-linecap="round"/>
+          <line x1="8" y1="20" x2="17" y2="20" stroke="#97C459" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="apptitle">dailyBudgetBook</span>
+    </div>
+  </header>
+  <main id="main"></main>
+  <div class="tabbar">
+    <button id="tabHome" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/></svg>
+      Budgets
+    </button>
+    <button id="tabTxns">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      Transactions
+    </button>
+    <button id="tabSettings">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      Settings
+    </button>
+  </div>
+</div>
+<div id="safe-bottom"></div>
+<div id="modalRoot"></div>
+<div id="toast"></div>
+
+<script>
+/* ---------- themes ---------- */
+const THEMES = {
+  forest: { label:'Forest', bg:'#141613', bg2:'#141613', card:'#1E211C', text:'#F1EFE8', sub:'#B4B2A9',
+    border:'#2C2C2A', accent:'#97C459', accentbg:'#27500A', danger:'#F09595', dangerbg:'#501313',
+    track:'#2C2C2A', knob:'#97C459' },
+  ocean: { label:'Ocean', bg:'#FFFFFF', bg2:'#F5F8FA', card:'#FFFFFF', text:'#182228', sub:'#5C6B74',
+    border:'#DCE6EB', accent:'#1D6FA5', accentbg:'#E2F0F8', danger:'#B23A3A', dangerbg:'#FBEAEA',
+    track:'#EAF1F5', knob:'#1D6FA5' },
+  slate: { label:'Slate', bg:'#12161C', bg2:'#12161C', card:'#1B212A', text:'#E9EEF3', sub:'#9AA7B4',
+    border:'#2A323C', accent:'#5EC1D9', accentbg:'#123C46', danger:'#F19B9B', dangerbg:'#4A1F1F',
+    track:'#2A323C', knob:'#5EC1D9' },
+  sand: { label:'Sand', bg:'#FFFDF9', bg2:'#FBF6EC', card:'#FFFDF9', text:'#2B2419', sub:'#7A6E58',
+    border:'#EBE1CC', accent:'#B5651D', accentbg:'#F5E4CE', danger:'#A83232', dangerbg:'#FAEAEA',
+    track:'#F1E7D3', knob:'#B5651D' },
+  dusk: { label:'Dusk', bg:'#181422', bg2:'#181422', card:'#221C30', text:'#EDE8F5', sub:'#A79BC0',
+    border:'#31283F', accent:'#B79CF0', accentbg:'#332750', danger:'#F0A0A0', dangerbg:'#442222',
+    track:'#31283F', knob:'#B79CF0' }
+};
+function applyTheme(key){
+  const t = THEMES[key] || THEMES.forest;
+  const root = document.documentElement.style;
+  root.setProperty('--bg', t.bg);
+  root.setProperty('--bg2', t.bg2);
+  root.setProperty('--card', t.card);
+  root.setProperty('--text', t.text);
+  root.setProperty('--sub', t.sub);
+  root.setProperty('--border', t.border);
+  root.setProperty('--accent', t.accent);
+  root.setProperty('--accentbg', t.accentbg);
+  root.setProperty('--danger', t.danger);
+  root.setProperty('--dangerbg', t.dangerbg);
+  root.setProperty('--track', t.track);
+  root.setProperty('--knob', t.knob);
+  localStorage.setItem('dbb_theme', key);
+}
+let savedTheme = localStorage.getItem('dbb_theme') || 'forest';
+if (!THEMES[savedTheme]) savedTheme = (savedTheme === 'light') ? 'sand' : 'forest';
+applyTheme(savedTheme);
+
+/* ---------- OPFS storage ---------- */
+let dirHandle = null;
+async function getDir(){
+  if (!dirHandle) dirHandle = await navigator.storage.getDirectory();
+  return dirHandle;
+}
+async function readFile(name){
+  try{
+    const dir = await getDir();
+    const fh = await dir.getFileHandle(name, { create: false });
+    const file = await fh.getFile();
+    return await file.text();
+  }catch(e){ return ''; }
+}
+async function writeFile(name, text){
+  const dir = await getDir();
+  const fh = await dir.getFileHandle(name, { create: true });
+  const writable = await fh.createWritable();
+  await writable.write(text);
+  await writable.close();
+}
+
+/* ---------- CSV helpers ---------- */
+function csvEscape(v){
+  v = String(v ?? '');
+  if (/[",\n]/.test(v)) return '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+function csvRow(arr){ return arr.map(csvEscape).join(',') + '\n'; }
+function parseCsv(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i=0; i<text.length; i++){
+    const c = text[i];
+    if (inQuotes){
+      if (c === '"'){
+        if (text[i+1] === '"'){ field += '"'; i++; } else inQuotes = false;
+      } else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ','){ row.push(field); field=''; }
+      else if (c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if (c === '\r'){ /* skip */ }
+      else field += c;
+    }
+  }
+  if (field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r => r.length > 1 || r[0] !== '');
+}
+
+/* ---------- data model ----------
+  budgets.csv:        id,name,sort_order,deleted,icon
+  budget_amounts.csv: budget_id,effective_month,amount,type   (type: recurring | override)
+  transactions.csv:   id,budget_id,date,amount,note,deleted
+*/
+let budgets = [];       // {id,name,sort_order,deleted}
+let amounts = [];       // {budget_id,effective_month,amount,type}
+let txns = [];          // {id,budget_id,date,amount,note,deleted}
+const BUDGETS_FILE='budgets.csv', AMOUNTS_FILE='budget_amounts.csv', TXNS_FILE='transactions.csv';
+const ROW_WARNING_THRESHOLD = 4000;
+
+async function loadAll(){
+  const b = parseCsv(await readFile(BUDGETS_FILE));
+  budgets = b.map(r => ({id:r[0], name:r[1], sort_order:parseInt(r[2]||'0'), deleted: r[3]==='1', icon: r[4]||'wallet'}));
+  const a = parseCsv(await readFile(AMOUNTS_FILE));
+  amounts = a.map(r => ({budget_id:r[0], effective_month:r[1], amount:parseFloat(r[2]), type:r[3]}));
+  const t = parseCsv(await readFile(TXNS_FILE));
+  txns = t.map(r => ({id:r[0], budget_id:r[1], date:r[2], amount:parseFloat(r[3]), note:r[4]||'', deleted:r[5]==='1'}));
+}
+async function saveBudgets(){
+  let out=''; budgets.forEach(b => out += csvRow([b.id,b.name,b.sort_order,b.deleted?'1':'0',b.icon||'wallet']));
+  await writeFile(BUDGETS_FILE, out);
+}
+async function saveAmounts(){
+  let out=''; amounts.forEach(a => out += csvRow([a.budget_id,a.effective_month,a.amount,a.type]));
+  await writeFile(AMOUNTS_FILE, out);
+}
+async function saveTxns(){
+  let out=''; txns.forEach(t => out += csvRow([t.id,t.budget_id,t.date,t.amount,t.note,t.deleted?'1':'0']));
+  await writeFile(TXNS_FILE, out);
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function budgetAmountForMonth(budgetId, month){
+  const rows = amounts.filter(a => a.budget_id === budgetId);
+  const override = rows.find(a => a.type==='override' && a.effective_month===month);
+  if (override) return override.amount;
+  const recurring = rows.filter(a => a.type==='recurring' && a.effective_month <= month)
+    .sort((x,y)=> y.effective_month.localeCompare(x.effective_month));
+  return recurring.length ? recurring[0].amount : 0;
+}
+function spentForMonth(budgetId, month){
+  return txns.filter(t => t.budget_id===budgetId && !t.deleted && t.date.startsWith(month))
+    .reduce((s,t)=> s + t.amount, 0);
+}
+function activeBudgets(){
+  return budgets.filter(b => !b.deleted).sort((a,b)=> a.sort_order - b.sort_order);
+}
+
+/* ---------- state ---------- */
+let currentMonth = new Date().toISOString().slice(0,7); // YYYY-MM
+let currentTab = 'home';
+const FIXED_CATEGORIES = ['Groceries','Dining out','Transport/gas','Rent/housing','Utilities',
+  'Subscriptions','Entertainment','Shopping','Health','Coffee'];
+
+const ICONS = {
+  wallet:      '<rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="17" cy="15" r="1.2" fill="currentColor" stroke="none"/>',
+  coffee:      '<path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M7 3c0 1-1 1-1 2s1 1 1 2M11 3c0 1-1 1-1 2s1 1 1 2"/>',
+  dining:      '<path d="M6 2v8M4 2v4a2 2 0 0 0 4 0V2M6 10v12"/><path d="M17 2c-1.5 0-3 1.5-3 4v4h2v10"/>',
+  groceries:   '<path d="M4 8h16l-1.5 10.5a2 2 0 0 1-2 1.5H7.5a2 2 0 0 1-2-1.5L4 8Z"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/>',
+  transport:   '<path d="M3 13l1.5-5A2 2 0 0 1 6.4 6.5h11.2A2 2 0 0 1 19.5 8L21 13"/><rect x="3" y="13" width="18" height="6" rx="2"/><circle cx="7.5" cy="19" r="1.3"/><circle cx="16.5" cy="19" r="1.3"/>',
+  housing:     '<path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
+  utilities:   '<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>',
+  subscriptions:'<path d="M4 4v5h5"/><path d="M20 20v-5h-5"/><path d="M5 9a8 8 0 0 1 14-3M19 15a8 8 0 0 1-14 3"/>',
+  entertainment:'<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M10 8.5 15 11l-5 2.5v-5Z" fill="currentColor" stroke="none"/><path d="M3 20h18"/>',
+  shopping:    '<path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+  health:      '<path d="M12 21s-7-4.4-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.6-9.5 9-9.5 9Z"/>',
+  travel:      '<path d="M10.5 20 12 16l1.5 4M8 12l-6 1.5L4 15l4-1M16 12l6 1.5L20 15l-4-1M12 3 5 12h14L12 3Z"/>',
+  gift:        '<rect x="3" y="9" width="18" height="12" rx="1"/><path d="M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3M12 5v16"/><path d="M12 5C10 1 5 3 6 6c1.5 0 4-.5 6-1ZM12 5c2-4 7-2 6 1-1.5 0-4-.5-6-1Z"/>'
+};
+const ICON_ORDER = ['wallet','coffee','dining','groceries','transport','housing','utilities','subscriptions','entertainment','shopping','health','travel','gift'];
+const CATEGORY_ICON = {
+  'Groceries':'groceries', 'Dining out':'dining', 'Transport/gas':'transport', 'Rent/housing':'housing',
+  'Utilities':'utilities', 'Subscriptions':'subscriptions', 'Entertainment':'entertainment',
+  'Shopping':'shopping', 'Health':'health', 'Coffee':'coffee'
+};
+function iconSvg(key, size){
+  size = size || 16;
+  const inner = ICONS[key] || ICONS.wallet;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+}
+
+function monthLabel(m){
+  const [y,mo] = m.split('-').map(Number);
+  return new Date(y, mo-1, 1).toLocaleDateString(undefined, {month:'long', year:'numeric'});
+}
+function fmt(n){ return '$' + (Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+/* ---------- rendering ---------- */
+const mainEl = document.getElementById('main');
+let viewMode = localStorage.getItem('dbb_view') || 'list';
+let openKebabId = null;
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=> t.classList.remove('show'), 1800);
+}
+
+function renderHome(){
+  const bl = activeBudgets();
+  let html = `<div class="monthnav">
+    <button id="prevMonth">&lsaquo;</button>
+    <span class="label">${monthLabel(currentMonth)}</span>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div class="viewtoggle">
+        <button id="viewList" class="${viewMode==='list'?'active':''}">List</button>
+        <button id="viewGrid" class="${viewMode==='grid'?'active':''}">Grid</button>
+      </div>
+      <button id="nextMonth">&rsaquo;</button>
+    </div>
+  </div>`;
+
+  if (txns.filter(t=>!t.deleted).length + budgets.filter(b=>!b.deleted).length > ROW_WARNING_THRESHOLD){
+    html += `<div class="warn">Your budget book is getting long. Export a backup and consider starting fresh from settings.</div>`;
+  }
+
+  if (bl.length === 0){
+    html += `<div class="empty">No budgets yet.<br>Create one to start tracking.</div>`;
+  } else {
+    const totalBudget = bl.reduce((s,b)=> s + budgetAmountForMonth(b.id, currentMonth), 0);
+    const totalSpent = bl.reduce((s,b)=> s + spentForMonth(b.id, currentMonth), 0);
+    const totalOver = totalSpent > totalBudget;
+    html += `<div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; padding:0 2px;">
+      <span class="sub" style="font-size:12px;">Total this month</span>
+      <span class="sub ${totalOver?'over':''}" style="font-size:12px;">${fmt(totalSpent)} / ${fmt(totalBudget)} ${totalOver ? '· '+fmt(totalSpent-totalBudget)+' over' : '· '+fmt(totalBudget-totalSpent)+' left'}</span>
+    </div>`;
+
+    if (viewMode === 'grid'){
+    html += `<div class="gridwrap">`;
+    bl.forEach(b => {
+      const budget = budgetAmountForMonth(b.id, currentMonth);
+      const spent = spentForMonth(b.id, currentMonth);
+      const pct = budget > 0 ? Math.round((spent/budget)*100) : 0;
+      const over = spent > budget;
+      html += `<div class="gridcard" onclick="openLog('${b.id}')">
+        <div style="display:flex; align-items:center; margin-bottom:2px;">
+          <div class="b-icon sm">${iconSvg(b.icon,13)}</div>
+          <span class="name">${b.name}</span>
+        </div>
+        <span class="amt">${fmt(spent)} / ${fmt(budget)}</span>
+        <div class="track"><div class="fill ${over?'over':''}" style="width:${Math.min(100,pct)}%"></div></div>
+        <div class="sub ${over?'over':''}" style="margin-top:4px;">${pct}%</div>
+      </div>`;
+    });
+    html += `</div>`;
+  } else {
+    html += `<div id="budgetList">`;
+    bl.forEach(b => {
+      const budget = budgetAmountForMonth(b.id, currentMonth);
+      const spent = spentForMonth(b.id, currentMonth);
+      const pct = budget > 0 ? Math.round((spent/budget)*100) : 0;
+      const over = spent > budget;
+      const remaining = budget - spent;
+      html += `<div class="card" draggable="true" data-id="${b.id}" onclick="openLog('${b.id}')">
+        <div class="cardhead">
+          <div class="row" style="flex:1; align-items:center;">
+            <div style="display:flex; align-items:center;">
+              <div class="b-icon">${iconSvg(b.icon,16)}</div>
+              <span class="name">${b.name}</span>
+            </div>
+            <span class="amt">${fmt(spent)} / ${fmt(budget)}</span>
+          </div>
+          <div class="kebab">
+            <button class="dots" onclick="toggleKebab(event,'${b.id}')">&#8942;</button>
+            ${openKebabId===b.id ? `<div class="kebabmenu">
+              <button onclick="event.stopPropagation(); openKebabId=null; openBudgetForm('${b.id}')">Edit</button>
+              <button class="danger" onclick="event.stopPropagation(); confirmDeleteBudget('${b.id}')">Delete</button>
+            </div>` : ''}
+          </div>
+        </div>
+        <div class="track"><div class="fill ${over?'over':''}" style="width:${Math.min(100,pct)}%"></div></div>
+        <div class="sub ${over?'over':''}">${pct}% spent · ${over ? fmt(Math.abs(remaining))+' over' : fmt(remaining)+' remaining'}</div>
+      </div>`;
+    });
+    html += `</div>`;
+    }
+  }
+  html += `<button class="secondary" onclick="openBudgetForm()">+ New budget</button>`;
+  mainEl.innerHTML = html;
+  document.getElementById('prevMonth').onclick = () => shiftMonth(-1);
+  document.getElementById('nextMonth').onclick = () => shiftMonth(1);
+  document.getElementById('viewList').onclick = () => { viewMode='list'; localStorage.setItem('dbb_view','list'); renderHome(); };
+  document.getElementById('viewGrid').onclick = () => { viewMode='grid'; localStorage.setItem('dbb_view','grid'); renderHome(); };
+  wireDragReorder();
+}
+
+function toggleKebab(e, id){
+  e.stopPropagation();
+  openKebabId = (openKebabId === id) ? null : id;
+  renderHome();
+}
+
+function shiftMonth(delta){
+  const [y,m] = currentMonth.split('-').map(Number);
+  const d = new Date(y, m-1+delta, 1);
+  currentMonth = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  renderHome();
+}
+
+function wireDragReorder(){
+  const list = document.getElementById('budgetList');
+  if (!list) return;
+  let dragEl = null;
+  list.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('dragstart', e => { dragEl = card; e.dataTransfer.effectAllowed='move'; });
+    card.addEventListener('dragover', e => {
+      e.preventDefault();
+      const after = [...list.children].filter(c=>c!==dragEl).find(c => e.clientY < c.getBoundingClientRect().top + c.offsetHeight/2);
+      if (after) list.insertBefore(dragEl, after); else list.appendChild(dragEl);
+    });
+    card.addEventListener('dragend', async () => {
+      [...list.children].forEach((c,i) => {
+        const b = budgets.find(x=>x.id===c.dataset.id);
+        if (b) b.sort_order = i;
+      });
+      await saveBudgets();
+    });
+  });
+}
+
+/* ---------- log transaction ---------- */
+function openLog(budgetId, editTxn){
+  const b = budgets.find(x=>x.id===budgetId);
+  const today = new Date().toISOString().slice(0,10);
+  const isEdit = !!editTxn;
+  const modal = `<div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
+        <span class="b-icon sm" style="margin-right:0;">${iconSvg(b.icon,13)}</span>
+        ${isEdit?'Edit transaction':'Log to'} — ${b.name}
+      </h3>
+      <button onclick="closeModal()" style="background:none; border:none; color:var(--sub); font-size:20px; cursor:pointer; padding:0 4px;" aria-label="Cancel">&times;</button>
+    </div>
+    <div class="field"><label>Amount</label><input id="txnAmt" type="number" step="0.01" inputmode="decimal" placeholder="0.00" value="${isEdit?editTxn.amount:''}"></div>
+    <div class="field"><label>Date</label><input id="txnDate" type="date" value="${isEdit?editTxn.date:today}"></div>
+    <div class="field"><label>Note (optional)</label><input id="txnNote" type="text" placeholder="What was this for?" value="${isEdit?editTxn.note:''}"></div>
+    <button class="primary" onclick="saveTxn('${budgetId}'${isEdit? `,'${editTxn.id}'`:''})">Save transaction</button>
+  </div></div>`;
+  document.getElementById('modalRoot').innerHTML = modal;
+}
+async function saveTxn(budgetId, editId){
+  const amt = parseFloat(document.getElementById('txnAmt').value);
+  const date = document.getElementById('txnDate').value;
+  const note = document.getElementById('txnNote').value;
+  if (!amt || !date) return;
+  let ok = true;
+  try{
+    if (editId){
+      const t = txns.find(x=>x.id===editId);
+      t.amount = amt; t.date = date; t.note = note;
+    } else {
+      txns.push({id:uid(), budget_id:budgetId, date, amount:amt, note, deleted:false});
+    }
+    await saveTxns();
+  } catch(err){
+    console.error('save failed:', err);
+    ok = false;
+  }
+  closeModal();
+  try{ if (currentTab==='home') renderHome(); else renderTxns(); }
+  catch(err){ console.error('render failed:', err); }
+  if (!ok) showToast('Could not save — try again');
+}
+function closeModal(){ document.getElementById('modalRoot').innerHTML=''; }
+function closeModalBg(e){ if (e.target.classList.contains('modal-bg')) closeModal(); }
+
+/* ---------- budget create/edit ---------- */
+let selectedIcon = 'wallet';
+function openBudgetForm(editId){
+  const b = editId ? budgets.find(x=>x.id===editId) : null;
+  const curAmt = b ? budgetAmountForMonth(b.id, currentMonth) : '';
+  selectedIcon = b ? (b.icon || 'wallet') : 'wallet';
+  const chips = FIXED_CATEGORIES.map(c => `<span class="chip" onclick="pickChip(this,'${c}')">${c}</span>`).join('');
+  const iconButtons = ICON_ORDER.map(k => `<button type="button" class="b-icon sm iconpick ${k===selectedIcon?'selected':''}" data-icon="${k}" onclick="pickIcon(this,'${k}')" style="cursor:pointer; border:2px solid transparent;">${iconSvg(k,13)}</button>`).join('');
+  const modal = `<div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
+    <h3>${b?'Edit budget':'New budget'}</h3>
+    <div class="chiprow">${chips}</div>
+    <div class="field"><label>Name</label><input id="bName" type="text" placeholder="e.g. Coffee" value="${b?b.name:''}"></div>
+    <div class="field"><label>Monthly amount</label><input id="bAmt" type="number" step="0.01" inputmode="decimal" placeholder="0.00" value="${curAmt}"></div>
+    <div class="field"><label>Icon</label><div id="iconRow" style="display:flex; flex-wrap:wrap; gap:6px;">${iconButtons}</div></div>
+    <button class="primary" onclick="saveBudgetForm(${b?`'${b.id}'`:'null'})">Save budget</button>
+    <div class="btnrow"><button class="ghost" onclick="closeModal()">Cancel</button></div>
+  </div></div>`;
+  document.getElementById('modalRoot').innerHTML = modal;
+}
+function pickIcon(el, key){
+  selectedIcon = key;
+  document.querySelectorAll('.iconpick').forEach(b => { b.classList.remove('selected'); b.style.borderColor = 'transparent'; });
+  el.classList.add('selected');
+  el.style.borderColor = 'var(--accent)';
+}
+function pickChip(el, name){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('bName').value = name;
+  const suggested = CATEGORY_ICON[name];
+  if (suggested){
+    selectedIcon = suggested;
+    document.querySelectorAll('.iconpick').forEach(b => {
+      const match = b.dataset.icon === suggested;
+      b.classList.toggle('selected', match);
+      b.style.borderColor = match ? 'var(--accent)' : 'transparent';
+    });
+  }
+}
+async function saveBudgetForm(editId){
+  let name = document.getElementById('bName').value.trim();
+  const amt = parseFloat(document.getElementById('bAmt').value);
+  if (!name || !amt) return;
+  name = name.replace(/\s+/g,' ');
+  name = name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  if (!editId){
+    const dup = budgets.find(b => !b.deleted && b.name.toLowerCase() === name.toLowerCase());
+    if (dup){ showToast(`"${dup.name}" already exists`); return; }
+  }
+  let ok = true, created = false;
+  try{
+    if (editId){
+      const b = budgets.find(x=>x.id===editId);
+      if (b.name !== name || b.icon !== selectedIcon){ b.name = name; b.icon = selectedIcon; await saveBudgets(); }
+      const existing = budgetAmountForMonth(editId, currentMonth);
+      if (amt !== existing){
+        askRecurringScope(editId, amt);
+        return;
+      }
+    } else {
+      const id = uid();
+      budgets.push({id, name, sort_order: budgets.length, deleted:false, icon:selectedIcon});
+      amounts.push({budget_id:id, effective_month:currentMonth, amount:amt, type:'recurring'});
+      await saveBudgets();
+      await saveAmounts();
+      created = true;
+    }
+  } catch(err){
+    console.error('save failed:', err);
+    ok = false;
+  }
+  closeModal();
+  try{ renderHome(); }catch(err){ console.error('render failed:', err); }
+  if (ok) { if (created) showToast('Budget created'); }
+  else showToast('Could not save — try again');
+}
+function askRecurringScope(budgetId, amt){
+  const modal = `<div class="modal-bg"><div class="modal">
+    <h3>Apply this change to</h3>
+    <button class="secondary" style="margin-bottom:8px" onclick="applyAmountChange('${budgetId}',${amt},false)">This month only</button>
+    <button class="primary" onclick="applyAmountChange('${budgetId}',${amt},true)">This month and going forward</button>
+  </div></div>`;
+  document.getElementById('modalRoot').innerHTML = modal;
+}
+async function applyAmountChange(budgetId, amt, recurring){
+  try{
+    amounts.push({budget_id:budgetId, effective_month:currentMonth, amount:amt, type: recurring?'recurring':'override'});
+    await saveAmounts();
+  } catch(err){
+    console.error(err);
+    showToast('Could not save — try again');
+  } finally {
+    closeModal();
+    renderHome();
+  }
+}
+function confirmDeleteBudget(id){
+  openKebabId = null;
+  const b = budgets.find(x=>x.id===id);
+  const modal = `<div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
+    <h3>Delete "${b.name}"?</h3>
+    <div class="sub" style="margin-bottom:16px;">Past transactions stay in your CSV export for auditing, but this budget and its history will no longer show up in the app.</div>
+    <button class="primary" style="background:var(--danger);" onclick="deleteBudget('${id}')">Delete budget</button>
+    <div class="btnrow"><button class="ghost" onclick="closeModal()">Cancel</button></div>
+  </div></div>`;
+  document.getElementById('modalRoot').innerHTML = modal;
+}
+async function deleteBudget(id){
+  try{
+    const b = budgets.find(x=>x.id===id);
+    b.deleted = true;
+    await saveBudgets();
+  } catch(err){
+    console.error(err);
+    showToast('Could not delete — try again');
+  } finally {
+    openKebabId = null;
+    closeModal();
+    renderHome();
+  }
+}
+
+/* ---------- transactions list ---------- */
+let txnGroupBy = localStorage.getItem('dbb_group') || 'none';
+
+function renderTxns(){
+  const deletedIds = new Set(budgets.filter(b=>b.deleted).map(b=>b.id));
+  const list = txns.filter(t => !t.deleted && !deletedIds.has(t.budget_id) && t.date.startsWith(currentMonth))
+    .sort((a,b)=> b.date.localeCompare(a.date));
+
+  let html = `<div class="monthnav">
+    <button id="prevMonth2">&lsaquo;</button>
+    <span class="label">${monthLabel(currentMonth)}</span>
+    <button id="nextMonth2">&rsaquo;</button>
+  </div>
+  <div class="field" style="max-width:200px;">
+    <label>Group by</label>
+    <select id="groupSelect">
+      <option value="none" ${txnGroupBy==='none'?'selected':''}>None (by date)</option>
+      <option value="budget" ${txnGroupBy==='budget'?'selected':''}>Budget</option>
+    </select>
+  </div>`;
+
+  if (list.length===0){
+    html += `<div class="empty">No transactions this month.</div>`;
+  } else {
+    html += `<div style="max-height:60vh; overflow-y:auto; border:0.5px solid var(--border); border-radius:12px; padding:0 12px;">`;
+    if (txnGroupBy === 'budget'){
+      const byBudget = {};
+      list.forEach(t => { (byBudget[t.budget_id] = byBudget[t.budget_id] || []).push(t); });
+      activeBudgets().forEach(b => {
+        const rows = byBudget[b.id];
+        if (!rows || !rows.length) return;
+        const subtotal = rows.reduce((s,t)=> s + t.amount, 0);
+        html += `<div style="padding:12px 0 4px; font-size:12px; font-weight:600; color:var(--sub); display:flex; justify-content:space-between;">
+          <span>${b.name}</span><span>${fmt(subtotal)}</span></div>`;
+        rows.forEach(t => { html += txnRowHtml(t, b); });
+      });
+    } else {
+      list.forEach(t => {
+        const b = budgets.find(x=>x.id===t.budget_id);
+        html += txnRowHtml(t, b);
+      });
+    }
+    html += `</div>`;
+  }
+  mainEl.innerHTML = html;
+  document.getElementById('prevMonth2').onclick = () => shiftMonth(-1);
+  document.getElementById('nextMonth2').onclick = () => shiftMonth(1);
+  document.getElementById('groupSelect').onchange = (e) => {
+    txnGroupBy = e.target.value;
+    localStorage.setItem('dbb_group', txnGroupBy);
+    renderTxns();
+  };
+}
+function txnRowHtml(t, b){
+  return `<div class="txnrow">
+    <div style="display:flex; align-items:center;">
+      <div class="b-icon sm">${iconSvg(b?b.icon:'wallet',13)}</div>
+      <div>
+        <div>${b?b.name:'—'}</div>
+        <div class="meta">${t.date}${t.note?' · '+t.note:''}</div>
+      </div>
+    </div>
+    <div class="actions">
+      <span>${fmt(t.amount)}</span>
+      <span onclick="openLog('${t.budget_id}', ${JSON.stringify(t).replace(/"/g,'&quot;')})">&#9998;</span>
+      <span onclick="confirmDeleteTxn('${t.id}')" style="color:var(--danger)">&#10005;</span>
+    </div>
+  </div>`;
+}
+function confirmDeleteTxn(id){
+  const t = txns.find(x=>x.id===id);
+  const b = budgets.find(x=>x.id===t.budget_id);
+  const modal = `<div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
+    <h3>Delete this transaction?</h3>
+    <div class="sub" style="margin-bottom:16px;">${b?b.name:'—'} · ${t.date} · ${fmt(t.amount)}</div>
+    <button class="primary" style="background:var(--danger);" onclick="deleteTxn('${id}')">Delete transaction</button>
+    <div class="btnrow"><button class="ghost" onclick="closeModal()">Cancel</button></div>
+  </div></div>`;
+  document.getElementById('modalRoot').innerHTML = modal;
+}
+async function deleteTxn(id){
+  try{
+    const t = txns.find(x=>x.id===id);
+    t.deleted = true;
+    await saveTxns();
+  } catch(err){
+    console.error(err);
+    showToast('Could not delete — try again');
+  } finally {
+    closeModal();
+    renderTxns();
+  }
+}
+
+/* ---------- settings / export ---------- */
+function renderSettings(){
+  const current = localStorage.getItem('dbb_theme') || 'forest';
+  let swatches = '';
+  Object.keys(THEMES).forEach(key => {
+    const t = THEMES[key];
+    swatches += `<div class="themecard ${key===current?'selected':''}" onclick="selectTheme('${key}')">
+      <div class="themeswatch">
+        <div style="background:${t.bg2};"></div>
+        <div style="background:${t.card};"></div>
+        <div style="background:${t.accent};"></div>
+      </div>
+      <div class="themename">${t.label}</div>
+    </div>`;
+  });
+  mainEl.innerHTML = `
+    <div class="card">
+      <div class="name" style="margin-bottom:6px;">Theme</div>
+      <div class="sub" style="margin-bottom:4px;">Pick the palette that's easiest on your eyes.</div>
+      <div class="themegrid">${swatches}</div>
+    </div>
+    <div class="card">
+      <div class="name" style="margin-bottom:10px;">Backup</div>
+      <div class="sub" style="margin-bottom:12px;">Export your data as CSV files you can save to Files, iCloud, or AirDrop to another device.</div>
+      <button class="primary" onclick="exportData()">Export CSV backup</button>
+    </div>
+    <div class="card">
+      <div class="name" style="margin-bottom:10px;">About</div>
+      <div class="sub">dailyBudgetBook stores everything locally on this device only. Nothing is sent anywhere.</div>
+    </div>`;
+}
+function selectTheme(key){
+  applyTheme(key);
+  renderSettings();
+}
+async function exportData(){
+  const bCsv = await readFile(BUDGETS_FILE);
+  const aCsv = await readFile(AMOUNTS_FILE);
+  const tCsv = await readFile(TXNS_FILE);
+  const files = [
+    new File([bCsv], 'budgets.csv', {type:'text/csv'}),
+    new File([aCsv], 'budget_amounts.csv', {type:'text/csv'}),
+    new File([tCsv], 'transactions.csv', {type:'text/csv'})
+  ];
+  if (navigator.canShare && navigator.canShare({files})){
+    try{ await navigator.share({files, title:'dailyBudgetBook export'}); return; }catch(e){}
+  }
+  files.forEach(f => {
+    const url = URL.createObjectURL(f);
+    const a = document.createElement('a');
+    a.href = url; a.download = f.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  });
+}
+
+/* ---------- tabs ---------- */
+function setTab(tab){
+  currentTab = tab;
+  ['tabHome','tabTxns','tabSettings'].forEach(id => document.getElementById(id).classList.remove('active'));
+  if (tab==='home'){ document.getElementById('tabHome').classList.add('active'); renderHome(); }
+  if (tab==='txns'){ document.getElementById('tabTxns').classList.add('active'); renderTxns(); }
+  if (tab==='settings'){ document.getElementById('tabSettings').classList.add('active'); renderSettings(); }
+}
+document.getElementById('tabHome').onclick = () => setTab('home');
+document.getElementById('tabTxns').onclick = () => setTab('txns');
+document.getElementById('tabSettings').onclick = () => setTab('settings');
+
+/* ---------- init ---------- */
+(async function init(){
+  if (navigator.storage && navigator.storage.persist) { try{ await navigator.storage.persist(); }catch(e){} }
+  await loadAll();
+  renderHome();
+  if ('serviceWorker' in navigator){
+    try{ await navigator.serviceWorker.register('sw.js'); }catch(e){}
+  }
+})();
+</script>
+</body>
+</html>
